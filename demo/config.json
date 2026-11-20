@@ -1,0 +1,24 @@
+{
+  "vin": "WVWZZZ1JZXW000001",
+  "evccid": "000102030405",
+  "password": "Abc1234!",
+  "path": "/v2icp",
+  "departure_in_minutes": 60,
+  "vehicle": {
+    "odo": 5000,
+    "bat_reqtime": 30,
+    "bat_eamount": 80,
+    "prec_eamount": 10,
+    "prec_reqtime": 20,
+    "chrg_stat": 1,
+    "h2_stat": -1,
+    "bat_stat": 0
+  },
+  "backend": {
+    "prec_dsrd": 1,
+    "prec_hvac": 3,
+    "ambienttemp": 18,
+    "target_dist": 120,
+    "target_soc": 80
+  }
+}

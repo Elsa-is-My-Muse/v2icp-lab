@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="lab-token" content="__CSRF_TOKEN__">
+  <title>V2ICP Lab · 车桩后台通信实验室</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="V2ICP Lab 首页"><span class="brand-mark">V↔</span><span>V2ICP <b>LAB</b><small>车 · 桩 · 后台通信实验室</small></span></a>
+    <div class="top-actions"><span class="local-badge">● LOCAL ONLY</span><a class="button quiet" href="/api/report" download>导出脱敏报告 ↗</a></div>
+  </header>
+  <main>
+    <section class="intro">
+      <div><p class="eyebrow">OBSERVE / EXPERIMENT / UNDERSTAND</p><h1>让每一次收发，都看得见。</h1><p class="subtitle">面向 VDV 261 / V2ICP 学习的可交互实验台。修改数据、观察链路、验证异常。</p></div>
+      <div class="session-badge"><span class="status-dot" id="status-dot"></span><span id="status-label">尚未启动</span></div>
+    </section>
+    <div class="scope-banner"><strong>实验边界</strong><span>真实 IPv6 / TLS / HTTP；PLC、InternetAccess VAS、车辆 CAN 为仿真或未接入。不是充电控制器，也不是标准一致性认证工具。</span></div>
+    <div id="notice" role="status" aria-live="polite"></div>
+
+    <section class="panel topology-panel" aria-label="通信拓扑">
+      <div class="panel-heading"><h2>端到端通信链路</h2><span class="tag">独立于 ISO 15118 充电连接</span></div>
+      <div class="topology">
+        <article class="node"><div class="node-icon">EV</div><div><span class="node-type">VEHICLE CLIENT</span><h3>EVCC 模拟车端</h3><p>读取状态 · 校验响应</p><code id="vehicle-id">合成测试身份</code></div></article>
+        <div class="link"><span>TLS 加密字节 →</span><div class="link-line"></div><small>← HTTP 响应</small></div>
+        <article class="node"><div class="node-icon relay">⇄</div><div><span class="node-type">BYTE RELAY</span><h3>SECC 中继演示</h3><p>仅转发 · 不持有 TLS 私钥</p><code id="relay-address">[::1]:待分配</code></div></article>
+        <div class="link"><span>不解密转发 →</span><div class="link-line"></div><small>← 同一 TLS 会话</small></div>
+        <article class="node"><div class="node-icon backend">BE</div><div><span class="node-type">SIMULATED BACKEND</span><h3>调度后台</h3><p>合并车辆快照 · 返回计划</p><code id="backend-address">[::1]:待分配</code></div></article>
+      </div>
+      <div class="tls-bar"><span id="tls-label">○ 等待建立 TLS</span><span>本机随机测试端口 ≠ 生产网络路由 / 443</span></div>
+    </section>
+
+    <section class="controls panel" aria-label="运行控制">
+      <div class="control-buttons"><button id="start" class="primary">▶ 自动运行</button><button id="step">单步收发</button><button id="stop" class="danger" disabled>■ 停止</button></div>
+      <div class="timing"><label>时序预设<select id="preset"><option value="fast">快速演示 · 非规范时序</option><option value="reference">参考时序 · 10s / 15s</option><option value="custom">自定义</option></select></label><label>发送间隔 / s<input id="interval" type="number" min="0.1" max="60" step="0.1" value="1"></label><label>响应超时 / s<input id="timeout" type="number" min="0.1" max="30" step="0.1" value="2"></label></div>
+    </section>
+    <section class="metrics" aria-label="实时统计">
+      <div><span>发送 TX</span><strong id="tx-count">0</strong><small>含同帧重传</small></div>
+      <div><span>接收 RX</span><strong id="rx-count">0</strong><small>仅统计校验通过</small></div>
+      <div><span>下一序号</span><strong id="sequence">0</strong><small>0–255 循环</small></div>
+      <div><span>响应耗时</span><strong id="latency">—</strong><small>毫秒 · 最近一次</small></div>
+      <div><span>重传 / 拒绝</span><strong id="anomalies">0 / 0</strong><small>超时重发 / 非法响应</small></div>
+      <div><span>中继流量</span><strong id="bytes">0</strong><small>双向 TLS 字节总计</small></div>
+    </section>
+
+    <div class="two-columns">
+      <section class="panel"><div class="panel-heading"><div><p class="eyebrow">UPLINK / EVCC → BACKEND</p><h2>车辆上报数据</h2></div><span class="tag mint">可编辑</span></div><p class="help">这里输入协议原始值。未知值保持 SNA，不要把未知安全状态当成正常。</p><form id="vehicle-form"><div id="vehicle-fields" class="fields"></div><button type="submit">应用车辆数据</button><span class="form-note">下一轮发送生效 · 不写入配置文件</span></form></section>
+      <section class="panel"><div class="panel-heading"><div><p class="eyebrow">DOWNLINK / BACKEND → EVCC</p><h2>后台调度计划</h2></div><span class="tag blue">可编辑</span></div><p class="help">发车时间使用分钟，其余输入协议原始值；仅观察模拟接收，不执行 BMS / HVAC。</p><form id="backend-form"><div class="fields"><label>距发车时间 / 分钟<input id="departure" type="number" min="0" max="1440" step="1" value="60" placeholder="留空表示未知"><small>报文 driveoff × 5 = 分钟；空值为 SNA</small></label></div><div id="backend-fields" class="fields"></div><button type="submit">应用后台计划</button><span class="form-note">修改目标 SOC，观察 RX 与物理值</span></form></section>
+    </div>
+    <div class="two-columns messages">
+      <section class="panel"><div class="panel-heading"><h2><span class="direction up">↑</span>最近发送 TX</h2><span class="tag">首次全量 / 后续增量</span></div><pre id="tx-json">等待发送…</pre></section>
+      <section class="panel"><div class="panel-heading"><h2><span class="direction down">↓</span>最近有效 RX</h2><span class="tag">校验 seq + VIN</span></div><pre id="rx-json">等待响应…</pre></section>
+    </div>
+    <div class="two-columns">
+      <section class="panel"><div class="panel-heading"><h2>车端解析的后台值</h2><span class="tag">raw → physical</span></div><div class="table-wrap"><table><thead><tr><th>信号</th><th>原始值</th><th>解析值</th></tr></thead><tbody id="physical-values"><tr><td colspan="3">尚无有效响应</td></tr></tbody></table></div><p class="help">SNA 显示为“不可用”。解析成功不等于整车执行成功。</p></section>
+      <section class="panel"><div class="panel-heading"><h2>异常注入实验</h2><span class="tag amber">仅作用于本机后台</span></div><p class="help">对下一次请求生效；自动模式可能在点击后立即触发。建议用单步模式逐帧观察。</p><label>选择故障<select id="fault"><option value="drop">丢弃一次响应 → 超时后同帧重发</option><option value="wrong_seq">响应序号错误 → 拒绝</option><option value="wrong_vin">响应 VIN 错误 → 拒绝</option><option value="http_503">HTTP 503 → 拒绝</option><option value="oversize">响应超过 512 字节 → 断开并停止</option></select></label><button id="inject">注入下一次故障</button><p class="help">超大响应或三次无响应后需手动重新启动；未实现完整生产重连策略。</p></section>
+    </div>
+    <section class="panel event-panel"><div class="panel-heading"><h2>通信事件时间线</h2><span class="tag">最近 400 条 · 新事件在前</span></div><div id="events" class="events" aria-live="off"><p class="help">启动实验后，事件会显示在这里。</p></div></section>
+    <footer><span>V2ICP LAB / OPEN LEARNING, HONEST BOUNDARIES.</span><span>软件实验已实现 · 硬件接入需单独验证</span></footer>
+  </main>
+</body>
+</html>
