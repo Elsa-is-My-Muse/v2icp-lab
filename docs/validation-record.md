@@ -35,9 +35,23 @@ Python的TLS库版本可能与命令行OpenSSL不同；如需诊断以`python -c
 
 修改文件或暂存清单后应重新执行`python tools/release_check.py --require-git`。工作区扫描不等于历史审查；测试结果仅对记录中的环境与版本成立。
 
+## GitHub CI
+
+2026-11-20，提交 `67ca85a` 的首轮远端工作流已全部通过：
+
+| Runner | Python / 编译器 | 结果 |
+|---|---|---|
+| ubuntu-latest | Python 3.10 | 65项测试、CLI和发布检查通过 |
+| ubuntu-latest | Python 3.13 | 65项测试、CLI和发布检查通过 |
+| windows-latest | Python 3.10 | 65项测试、CLI和发布检查通过 |
+| windows-latest | Python 3.13 | 65项测试、CLI和发布检查通过 |
+| ubuntu-latest | GCC C99主机示例 | 编译与断言通过 |
+
+记录地址：`https://github.com/Elsa-is-My-Muse/v2icp-lab/actions/runs/44713999754`。后续提交以各自的Actions记录为准；远端CI通过不增加硬件或规范认证范围。
+
 ## 没有执行或不包含
 
-- Linux/macOS本地运行、Python3.10本地执行：未测；CI矩阵是计划配置，不伪造结果。
+- 真实Linux桌面/macOS浏览器操作、macOS自动测试：未测；Linux与Python3.10的自动化结果仅指上述CI。
 - 远端Actions：独立记录在仓库的Actions页面，不作为本地测量结果。
 - EVCC/SECC硬件供电、烧录、PLC/SLAC、VAS、IPv6网关、双连接实物测量、CAN执行、整车测试：未测。
 - 标准全文的逐条核对、一致性认证、安规/EMC/绝缘与生产可靠性：未做。
